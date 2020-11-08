@@ -1,0 +1,29 @@
+{
+    "name": "greenclaim/exact-online-client-laravel",
+    "description": "A Laravel library to consume the Exact online API",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Rik Morskate",
+            "email": "technical@yource.com",
+            "homepage": "https://yource.com",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "ext-json": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Yource\\ExactOnlineClient\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Yource\\ExactOnlineClient\\ExactOnlineClientServiceProvider"
+            ]
+        }
+    }
+}
