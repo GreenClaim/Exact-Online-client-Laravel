@@ -1,6 +1,6 @@
 {
     "name": "greenclaim/exact-online-client-laravel",
-    "description": "A Laravel library to consume the Exact online API",
+    "description": "A Laravel library to consume the Exact Online API",
     "type": "library",
     "license": "MIT",
     "authors": [
