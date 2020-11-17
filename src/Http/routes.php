@@ -3,7 +3,6 @@
 use Yource\ExactOnlineClient\Http\Controllers\ExactOnlineConnectController;
 
 Route::prefix('exact-online')
-    ->middleware(config('laravel-exact-online.exact_multi_user') ? ['web', 'auth'] : ['web'])
     ->name('exact-online.')
     ->group(function () {
         Route::get(

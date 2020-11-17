@@ -23,7 +23,11 @@ class ExactOnlineClient
 
     private string $endpoint;
 
-    private array $where;
+    private array $wheres;
+
+    private array $query;
+
+    private int $limitRequests;
 
     public function __construct(ExactOnlineResource $resource)
     {
@@ -40,7 +44,7 @@ class ExactOnlineClient
 
     public function where(string $field, $value): self
     {
-        $this->where[$field] = $value;
+        $this->wheres[$field] = $value;
 
         return $this;
     }
@@ -56,26 +60,38 @@ class ExactOnlineClient
     {
         $response = $this
             ->whereGuid($primaryKey)
-            ->get();
+            ->first60();
+//            ->get();
 
         return $response->first();
     }
 
+    public function limitRequests(int $limit): self
+    {
+        $this->limitRequests = $limit;
+
+        return $this;
+    }
+
     public function first()
     {
-        $this->where['$top'] = 1;
+        $this->query['$top'] = 1;
 
         return $this->request('GET');
     }
 
-    public function get(): Collection
+    /**
+     * Execute the query and return the first 60 result
+     *
+     * @note This will return a maximum of 60 results since this is the default limit of the Exact Online API
+     */
+    public function first60(): Collection
     {
         $resource = $this->getResource();
 
         $response = $this->request('GET');
 
         $resources = collect();
-
         if (isset($response->d->results)) {
             foreach ($response->d->results as $item) {
                 $resources->add(new $resource((array) $item));
@@ -85,6 +101,42 @@ class ExactOnlineClient
         }
 
         return $resources;
+    }
+
+    /**
+     * Return all the results of the query
+     *
+     * @note This may results in multiple requests to the Exact Online API since the default limit is 60
+     */
+    public function get(): Collection
+    {
+        $resource = $this->getResource();
+
+        $i = 1;
+        $resources = collect();
+
+        do {
+            $response = $this->request('GET');
+
+            foreach ($response->d->results as $item) {
+                $resources->add(new $resource((array) $item));
+            }
+
+            $lastResource = $resources->last();
+            $this->query['$skiptoken'] = "guid'{$lastResource->getPrimaryKey()}'";
+            $i++;
+        } while ($this->reachedRequestLimit($i) && !empty($response->d->__next));
+
+        return $resources;
+    }
+
+    private function reachedRequestLimit(int $i): bool
+    {
+        if (!empty($this->limitRequests)) {
+            return $i <= $this->limitRequests;
+        }
+
+        return true;
     }
 
     public function request(string $method)
@@ -104,8 +156,12 @@ class ExactOnlineClient
             'Authorization' => 'Bearer ' . unserialize($this->authorization->getAccessToken()),
         ];
 
-        if (!empty($this->where)) {
-            $options['query']['$filter='] = implode(',', $this->where);
+        if (!empty($this->query)) {
+            $options['query'] = $this->query;
+        }
+
+        if (!empty($this->wheres)) {
+            $options['query']['$filter='] = implode(',', $this->wheres);
         }
 
         try {

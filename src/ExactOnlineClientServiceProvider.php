@@ -14,6 +14,7 @@ class ExactOnlineClientServiceProvider extends ServiceProvider
 
         $this->publishes([
             __DIR__ . '/../config/exact-online-client-laravel.php' => config_path('exact-online-client-laravel.php'),
+            __DIR__ . '/views'                                     => base_path('resources/views/vendor/yource/exact-online-client-laravel'),
         ]);
     }
 

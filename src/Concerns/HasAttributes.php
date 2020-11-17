@@ -61,12 +61,12 @@ trait HasAttributes
             return $this->setMutatedAttributeValue($key, $value);
         }
 
-        // If an attribute is listed as a "relationship", we'll do another request to grab it
-        elseif ($value && $this->isRelationshipAttribute($key)) {
-            $this->$key = $this->requestRelationship($key);
-
-            return $this;
-        }
+//        // If an attribute is listed as a "relationship", we'll do another request to grab it
+//        elseif ($value && $this->isRelationshipAttribute($key)) {
+//            $this->$key = $this->requestRelationship($key);
+//
+//            return $this;
+//        }
 
         // If an attribute is listed as a "date", we'll convert it from a DateTime
         // instance into a form proper for storage on the database tables using
@@ -85,8 +85,14 @@ trait HasAttributes
      */
     public function getAttribute(string $key)
     {
-        if (! $key) {
+        if (!$key) {
             return;
+        }
+
+        // If an attribute is listed as a "relationship", we'll do another request to grab it/them
+        // Be aware this could result in multiple requests
+        if ($this->isRelationshipAttribute($key)) {
+            return $this->requestRelationship($key);
         }
 
         // If the attribute exists in the attribute array or has a "get" mutator we will
