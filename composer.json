@@ -14,7 +14,7 @@
     "require": {
         "php": "^7.1",
         "ext-json": "*",
-        "guzzlehttp/guzzle": "^6.2",
+        "guzzlehttp/guzzle": "^7.0.1",
         "laravel/framework": "^7.0"
     },
     "autoload": {
