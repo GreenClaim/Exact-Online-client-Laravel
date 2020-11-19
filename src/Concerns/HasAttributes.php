@@ -5,6 +5,7 @@ namespace Yource\ExactOnlineClient\Concerns;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
+use Yource\ExactOnlineClient\Resources\Resource;
 
 /**
  * @todo add functionality that removes attributes to clean up the returned
@@ -90,8 +91,13 @@ trait HasAttributes
         }
 
         // If an attribute is listed as a "relationship", we'll do another request to grab it/them
+        // When it's not yet an resource (or collection of resources)
         // Be aware this could result in multiple requests
-        if ($this->isRelationshipAttribute($key)) {
+        if (
+            $this->isRelationshipAttribute($key)
+            && !$this->getAttributeValue($key) instanceof Collection
+            && !$this->getAttributeValue($key) instanceof Resource
+        ) {
             return $this->requestRelationship($key);
         }
 
@@ -203,6 +209,7 @@ trait HasAttributes
      */
     public function requestRelationship($relationName): Collection
     {
+        // @todo what to do when a new parent is created and it doesnt have a primary key yet
         $parentEndpoint = $this->getEndpoint();
         $parentKey = $this->getPrimaryKey();
         $relationClass = $this->relationships[$relationName];
@@ -241,7 +248,7 @@ trait HasAttributes
     }
 
     /**
-     * Get all of the current attributes on the model.
+     * Get all of the current attributes on the resource.
      */
     public function getAttributes(): array
     {
@@ -249,7 +256,15 @@ trait HasAttributes
     }
 
     /**
-     * Convert the model's attributes to an array.
+     * Check if the resource has any attributes.
+     */
+    public function hasAttributes(): bool
+    {
+        return !empty($this->attributes);
+    }
+
+    /**
+     * Convert the resource's attributes to an array.
      *
      * @return array
      */

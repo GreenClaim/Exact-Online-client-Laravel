@@ -4,8 +4,11 @@ namespace Yource\ExactOnlineClient;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use Illuminate\Database\Eloquent\EmptyAttributesException;
 use Illuminate\Support\Collection;
-use Yource\ExactOnlineClient\Resources\ExactOnlineResource;
+use Illuminate\Support\Facades\Log;
+use Yource\ExactOnlineClient\Exceptions\ExactOnlineApiException;
+use Yource\ExactOnlineClient\Resources\Resource;
 
 class ExactOnlineClient
 {
@@ -19,7 +22,7 @@ class ExactOnlineClient
 
     private string $division;
 
-    private ExactOnlineResource $resource;
+    private Resource $resource;
 
     private string $endpoint;
 
@@ -27,9 +30,14 @@ class ExactOnlineClient
 
     private array $query;
 
+    /**
+     * The body of the request in JSON
+     */
+    private string $body;
+
     private int $limitRequests;
 
-    public function __construct(ExactOnlineResource $resource)
+    public function __construct(Resource $resource)
     {
         $this->authorization = (new ExactOnlineAuthorization());
 
@@ -118,6 +126,10 @@ class ExactOnlineClient
         do {
             $response = $this->request('GET');
 
+            if (empty($response->d->results)) {
+                return $resources;
+            }
+
             foreach ($response->d->results as $item) {
                 $resources->add(new $resource((array) $item));
             }
@@ -130,13 +142,23 @@ class ExactOnlineClient
         return $resources;
     }
 
-    private function reachedRequestLimit(int $i): bool
+    public function create()
     {
-        if (!empty($this->limitRequests)) {
-            return $i <= $this->limitRequests;
+        $resource = $this->getResource();
+
+        if (!$this->resource->hasAttributes()) {
+            throw new EmptyAttributesException;
         }
 
-        return true;
+        // Convert the resource's attributes and set it in the body to be sent
+        $this->body = $this->resource->toJson();
+        $response = $this->request('POST');
+
+        if (!empty($response->d)) {
+            return new $resource((array) $response->d);
+        }
+
+        throw new ExactOnlineApiException('The response is empty');
     }
 
     public function request(string $method)
@@ -156,12 +178,16 @@ class ExactOnlineClient
             'Authorization' => 'Bearer ' . unserialize($this->authorization->getAccessToken()),
         ];
 
+        if (!empty($this->body)) {
+            $options['body'] = $this->body;
+        }
+
         if (!empty($this->query)) {
             $options['query'] = $this->query;
         }
 
         if (!empty($this->wheres)) {
-            $options['query']['$filter='] = implode(',', $this->wheres);
+            $options['query']['$filter'] = $this->getFilterQuery();
         }
 
         try {
@@ -173,8 +199,28 @@ class ExactOnlineClient
 
             return json_decode($response->getBody()->getContents());
         } catch (GuzzleException $exception) {
+            throw new ExactOnlineApiException('Exact Online API error: ' . $exception->getMessage());
             dd($exception);
         }
+    }
+
+    private function reachedRequestLimit(int $i): bool
+    {
+        if (!empty($this->limitRequests)) {
+            return $i <= $this->limitRequests;
+        }
+
+        return true;
+    }
+
+    public function getFilterQuery(): string
+    {
+        $filters = $this->wheres;
+        array_walk($filters, function (&$a, $b) {
+            $a = "$b eq '$a'";
+        });
+
+        return implode('&', $filters);
     }
 
     public function getEndpoint(): string
@@ -188,7 +234,7 @@ class ExactOnlineClient
         return $this;
     }
 
-    public function getResource(): ExactOnlineResource
+    public function getResource(): Resource
     {
         return $this->resource;
     }
