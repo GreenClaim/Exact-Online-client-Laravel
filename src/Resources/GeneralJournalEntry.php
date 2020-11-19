@@ -2,9 +2,9 @@
 
 namespace Yource\ExactOnlineClient\Resources;
 
-use Yource\ExactOnlineClient\Interfaces\ExactOnlineResourceInterface;
+use Yource\ExactOnlineClient\Interfaces\ResourceInterface;
 
-class GeneralJournalEntry extends ExactOnlineResource implements ExactOnlineResourceInterface
+class GeneralJournalEntry extends Resource implements ResourceInterface
 {
     protected string $endpoint = 'generaljournalentry/GeneralJournalEntries';
 

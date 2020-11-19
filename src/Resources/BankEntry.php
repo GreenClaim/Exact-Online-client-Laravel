@@ -2,9 +2,9 @@
 
 namespace Yource\ExactOnlineClient\Resources;
 
-use Yource\ExactOnlineClient\Interfaces\ExactOnlineResourceInterface;
+use Yource\ExactOnlineClient\Interfaces\ResourceInterface;
 
-class BankEntry extends ExactOnlineResource implements ExactOnlineResourceInterface
+class BankEntry extends Resource implements ResourceInterface
 {
     protected string $endpoint = 'financialtransaction/BankEntries';
 

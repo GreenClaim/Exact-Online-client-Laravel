@@ -2,9 +2,9 @@
 
 namespace Yource\ExactOnlineClient\Resources;
 
-use Yource\ExactOnlineClient\Interfaces\ExactOnlineResourceInterface;
+use Yource\ExactOnlineClient\Interfaces\ResourceInterface;
 
-class GeneralLedgerAccount extends ExactOnlineResource implements ExactOnlineResourceInterface
+class GeneralLedgerAccount extends Resource implements ResourceInterface
 {
     protected string $endpoint = 'financial/GLAccounts';
 
