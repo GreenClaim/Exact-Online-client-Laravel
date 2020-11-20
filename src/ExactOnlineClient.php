@@ -4,9 +4,8 @@ namespace Yource\ExactOnlineClient;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
-use Illuminate\Database\Eloquent\EmptyAttributesException;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Log;
+use InvalidArgumentException;
 use Yource\ExactOnlineClient\Exceptions\ExactOnlineApiException;
 use Yource\ExactOnlineClient\Resources\Resource;
 
@@ -84,8 +83,9 @@ class ExactOnlineClient
     public function first()
     {
         $this->query['$top'] = 1;
+        $response = $this->first60();
 
-        return $this->request('GET');
+        return $response->first();
     }
 
     /**
@@ -147,7 +147,7 @@ class ExactOnlineClient
         $resource = $this->getResource();
 
         if (!$this->resource->hasAttributes()) {
-            throw new EmptyAttributesException;
+            throw new InvalidArgumentException('Attributes can\'t be empty');
         }
 
         // Convert the resource's attributes and set it in the body to be sent
