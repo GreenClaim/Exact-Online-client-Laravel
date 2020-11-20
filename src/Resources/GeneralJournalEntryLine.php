@@ -4,9 +4,9 @@ namespace Yource\ExactOnlineClient\Resources;
 
 use Yource\ExactOnlineClient\Interfaces\ResourceInterface;
 
-class BankEntryLine extends Resource implements ResourceInterface
+class GeneralJournalEntryLine extends Resource implements ResourceInterface
 {
-    protected string $endpoint = 'financialtransaction/BankEntryLines';
+    protected string $endpoint = 'generaljournalentry/GeneralJournalEntryLines';
 
     protected array $dates = [
         'Created',
