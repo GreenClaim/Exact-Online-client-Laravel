@@ -67,8 +67,7 @@ class ExactOnlineClient
     {
         $response = $this
             ->whereGuid($primaryKey)
-            ->first60();
-//            ->get();
+            ->get();
 
         return $response->first();
     }
@@ -83,7 +82,7 @@ class ExactOnlineClient
     public function first()
     {
         $this->query['$top'] = 1;
-        $response = $this->first60();
+        $response = $this->get();
 
         return $response->first();
     }
@@ -93,7 +92,7 @@ class ExactOnlineClient
      *
      * @note This will return a maximum of 60 results since this is the default limit of the Exact Online API
      */
-    public function first60(): Collection
+    public function get(): Collection
     {
         $resource = $this->getResource();
 
@@ -116,7 +115,7 @@ class ExactOnlineClient
      *
      * @note This may results in multiple requests to the Exact Online API since the default limit is 60
      */
-    public function get(): Collection
+    public function all(): Collection
     {
         $resource = $this->getResource();
 
