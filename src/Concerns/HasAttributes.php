@@ -216,7 +216,7 @@ trait HasAttributes
 
         return (new $relationClass)->newClient()
             ->setEndpoint("{$parentEndpoint}(guid'{$parentKey}')/{$relationName}")
-            ->get();
+            ->all();
     }
 
     /**
