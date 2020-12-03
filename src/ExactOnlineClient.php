@@ -56,24 +56,28 @@ class ExactOnlineClient
         return $this;
     }
 
-    public function whereCode($value): self
+    public function whereGuid(string $guid): self
     {
-        $this->wheres['Code'] = $value;
+        $this->wheres['ID'] = "guid'{$guid}'";
         return $this;
     }
 
-    public function whereGuid(string $guid): self
+    /**
+     * Find by the uniquely assigned code
+     * The code is unique and always 18 characters long prefixed by spaces
+     *
+     * @param string|int $value
+     */
+    public function whereCode($value): self
     {
-        $this->setEndpoint("{$this->endpoint}(guid'{{$guid}}')");
-
+        $this->wheres['Code'] = str_pad($value, 18, ' ', STR_PAD_LEFT);
         return $this;
     }
 
     public function find(string $primaryKey)
     {
-        $response = $this
-            ->whereGuid($primaryKey)
-            ->get();
+        $this->setEndpoint("{$this->endpoint}(guid'{{$primaryKey}}')");
+        $response = $this->get();
 
         return $response->first();
     }
@@ -110,7 +114,7 @@ class ExactOnlineClient
                 $resources->add(new $resource((array) $item));
             }
         } else {
-            $response = !empty($response[0]) ? $response[0] : $response;
+            $response = is_array($response) ? $response[0] : $response;
             $resources->add(new $resource((array) $response));
         }
 
