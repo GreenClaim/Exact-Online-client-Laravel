@@ -189,9 +189,15 @@ trait HasAttributes
 
     /**
      * Return a timestamp as DateTime object.
+     * @param $value
+     * @return Carbon
      */
     protected function asDateTime($value): Carbon
     {
+        if ($value instanceof Carbon) {
+            return $value;
+        }
+
         preg_match('/(\d{13})/', $value, $matches);
         return Carbon::createFromTimestampMs($matches[0]);
     }
