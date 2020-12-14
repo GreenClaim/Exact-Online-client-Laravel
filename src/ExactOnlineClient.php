@@ -25,7 +25,9 @@ class ExactOnlineClient
 
     private string $endpoint;
 
-    private array $wheres;
+    private array $fields;
+
+    private array $wheres = [];
 
     private array $query;
 
@@ -47,6 +49,13 @@ class ExactOnlineClient
         $this->client = new Client([
             'base_uri' => $this->baseUri,
         ]);
+    }
+
+    public function select($fields = ['*']): self
+    {
+        $this->fields = $fields;
+
+        return $this;
     }
 
     public function where(string $field, $value): self
@@ -122,6 +131,45 @@ class ExactOnlineClient
     }
 
     /**
+     * Execute callback for all the results from each page
+     */
+    public function eachPage(callable $callback): bool
+    {
+        $resource = $this->getResource();
+
+        $page = 1;
+        do {
+            $resources = collect();
+            $response = $this->request('GET');
+
+            if (empty($response->d->results)) {
+                return true;
+            }
+
+            $results = $response->d->results;
+
+            foreach ($response->d->results as $item) {
+                $resources->add(new $resource((array) $item));
+            }
+
+            // On each chunk result set, we will pass them to the callback and then let the
+            // developer take care of everything within the callback, which allows us to
+            // iterate over all the pages with max 60 results
+            if ($callback($resources, $page) === false) {
+                return false;
+            }
+
+            unset($results);
+
+            $lastResource = $resources->last();
+            $this->query['$skiptoken'] = "guid'{$lastResource->getPrimaryKey()}'";
+            $page++;
+        } while ($this->reachedRequestLimit($page) && !empty($response->d->__next));
+
+        return true;
+    }
+
+    /**
      * Return all the results of the query
      *
      * @note This may results in multiple requests to the Exact Online API since the default limit is 60
@@ -130,7 +178,7 @@ class ExactOnlineClient
     {
         $resource = $this->getResource();
 
-        $i = 1;
+        $page = 1;
         $resources = collect();
         do {
             $response = $this->request('GET');
@@ -145,8 +193,8 @@ class ExactOnlineClient
 
             $lastResource = $resources->last();
             $this->query['$skiptoken'] = "guid'{$lastResource->getPrimaryKey()}'";
-            $i++;
-        } while ($this->reachedRequestLimit($i) && !empty($response->d->__next));
+            $page++;
+        } while ($this->reachedRequestLimit($page) && !empty($response->d->__next));
 
         return $resources;
     }
@@ -199,6 +247,10 @@ class ExactOnlineClient
             $options['query']['$filter'] = $this->getFilterQuery();
         }
 
+        if (!empty($this->fields)) {
+            $options['query']['$select'] = $this->getFieldsQuery();
+        }
+
         try {
             $response = $this->client->request(
                 $method,
@@ -222,6 +274,13 @@ class ExactOnlineClient
         return true;
     }
 
+    public function getFieldsQuery(): string
+    {
+        $fields = $this->fields;
+
+        return implode(',', $fields);
+    }
+
     public function getFilterQuery(): string
     {
         $filters = $this->wheres;
@@ -229,7 +288,7 @@ class ExactOnlineClient
             $a = "$b eq '$a'";
         });
 
-        return implode('&', $filters);
+        return implode(' and ', $filters);
     }
 
     public function getEndpoint(): string

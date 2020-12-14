@@ -4,10 +4,10 @@ namespace Yource\ExactOnlineClient\Resources;
 
 use BadMethodCallException;
 use Exception;
-use Illuminate\Contracts\Support\Jsonable;
 use Illuminate\Database\Eloquent\JsonEncodingException;
-use Yource\ExactOnlineClient\ExactOnlineClient;
 use Yource\ExactOnlineClient\Concerns\HasAttributes;
+use Yource\ExactOnlineClient\ExactOnlineClient;
+use Yource\ExactOnlineClient\Interfaces\Jsonable;
 
 abstract class Resource implements Jsonable
 {
@@ -27,7 +27,6 @@ abstract class Resource implements Jsonable
      * Dynamically retrieve attributes on the resource.
      *
      * @param  string  $key
-     * @return mixed
      */
     public function __get($key)
     {
@@ -38,7 +37,6 @@ abstract class Resource implements Jsonable
      * Dynamically set attributes on the resource.
      *
      * @param  string  $key
-     * @param  mixed  $value
      * @return void
      */
     public function __set($key, $value)
