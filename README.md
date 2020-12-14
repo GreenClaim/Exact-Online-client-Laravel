@@ -21,9 +21,9 @@ use Yource\ExactOnlineClient\Resources\BankEntry;
 $bankEntry = BankEntry::find('xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx');
 ````
 
-### Creating a financial entry resource with lines 
+### Creating a financial entry resource with lines
 When create a new financial entry make sure you keep the entry in perfect balance. This means the sum of all the
- lines needs to be exactly 0. 
+ lines needs to be exactly 0.
 ````
 use Yource\ExactOnlineClient\Resources\GeneralJournalEntry;
 use Yource\ExactOnlineClient\Resources\GeneralJournalEntryLine;
@@ -45,4 +45,33 @@ $generalJournalEntry = new GeneralJournalEntry([
     'GeneralJournalEntryLines' => collect([$generalJournalEntryLine1, $generalJournalEntryLine2]),
 ]);
 $generalJournalEntry->create();
+````
+
+### Each page
+Exact Online returns a maximum of 60 results. With `eachaPage()` you can iterate over all the pages and execute a
+callback to deal with the results per page. Similarly to `chunk()` for Laravel queries except that there is no count
+parameter you always get a maximum of 60 results.
+
+Keep in mind that for potentially large queries Exact Online requires you to make a subselection of the field you want
+returned. This is possible with `select()`.
+````
+use Yource\ExactOnlineClient\Resources\GeneralJournalEntry;
+
+GeneralJournalEntry::select([
+    'EntryID',
+    'EntryNumber',
+    'JournalCode',
+    'Currency',
+    'FinancialPeriod',
+    'FinancialYear',
+    'StatusDescription',
+    'JournalCode',
+    'Created',
+    'Modified',
+])
+->eachPage(function ($entries) {
+    foreach ($entries as $entry) {
+        // Handle the resuls. Eg. store them in the database.
+    }
+});
 ````
