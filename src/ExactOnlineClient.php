@@ -25,7 +25,9 @@ class ExactOnlineClient
 
     private string $endpoint;
 
-    private array $wheres;
+    private array $fields;
+
+    private array $wheres = [];
 
     private array $query;
 
@@ -47,6 +49,14 @@ class ExactOnlineClient
         $this->client = new Client([
             'base_uri' => $this->baseUri,
         ]);
+    }
+
+    public function select($fields = ['*']): self
+    {
+        dd($fields);
+        $this->fields = $fields;
+
+        return $this;
     }
 
     public function where(string $field, $value): self
