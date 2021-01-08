@@ -43,8 +43,8 @@ class ExactOnlineAuthorization
 
     public function getCredentials(): ?object
     {
-        if (Storage::exists($this->credentialFilePath)) {
-            $credentials = Storage::get(
+        if (Storage::disk('s3')->exists($this->credentialFilePath)) {
+            $credentials = Storage::disk('s3')->get(
                 $this->credentialFilePath
             );
             return (object) json_decode($credentials, false);
@@ -134,8 +134,8 @@ class ExactOnlineAuthorization
             $body = json_decode($response->getBody()->getContents(), true);
 
             if (json_last_error() === JSON_ERROR_NONE) {
-                if (Storage::exists($this->credentialFilePath)) {
-                    $credentials = Storage::get(
+                if (Storage::disk('s3')->exists($this->credentialFilePath)) {
+                    $credentials = Storage::disk('s3')->get(
                         $this->credentialFilePath
                     );
 
@@ -144,7 +144,7 @@ class ExactOnlineAuthorization
                     $credentials->refreshToken = $body['refresh_token'];
                     $credentials->tokenExpires = $this->getTimestampFromExpiresIn((int) $body['expires_in']);
 
-                    Storage::put($this->credentialFilePath, json_encode($credentials));
+                    Storage::disk('s3')->put($this->credentialFilePath, json_encode($credentials));
                 }
             } else {
                 throw new Exception('Could not acquire tokens, json decode failed. Got response: ' . $response->getBody()->getContents());
