@@ -67,7 +67,9 @@ class ExactOnlineClient
 
     public function whereGuid(string $guid): self
     {
-        $this->wheres['ID'] = "guid'{$guid}'";
+        $primaryKeyFieldName = $this->getResource()->getPrimaryKeyFieldName();
+        $this->wheres[$primaryKeyFieldName] = "guid'{$guid}'";
+
         return $this;
     }
 
@@ -75,11 +77,12 @@ class ExactOnlineClient
      * Find by the uniquely assigned code
      * The code is unique and always 18 characters long prefixed by spaces
      *
-     * @param string|int $value
+     * @param string $value
      */
     public function whereCode($value): self
     {
-        $this->wheres['Code'] = str_pad($value, 18, ' ', STR_PAD_LEFT);
+        $this->wheres['Code'] = (string) str_pad($value, 18, ' ', STR_PAD_LEFT);
+
         return $this;
     }
 
@@ -285,7 +288,10 @@ class ExactOnlineClient
     {
         $filters = $this->wheres;
         array_walk($filters, function (&$a, $b) {
-            $a = "$b eq '$a'";
+            if (!is_int($a)) {
+                $a = "'{$a}'";
+            }
+            $a = "{$b} eq {$a}";
         });
 
         return implode(' and ', $filters);
