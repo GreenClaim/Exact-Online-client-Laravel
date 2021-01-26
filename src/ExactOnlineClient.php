@@ -86,12 +86,12 @@ class ExactOnlineClient
         return $this;
     }
 
-    public function find(string $primaryKey)
+    public function find(string $primaryKey): ?Resource
     {
         $this->setEndpoint("{$this->endpoint}(guid'{{$primaryKey}}')");
         $response = $this->get();
 
-        return $response->first();
+        return optional($response)->first();
     }
 
     public function limitRequests(int $limit): self
@@ -101,7 +101,7 @@ class ExactOnlineClient
         return $this;
     }
 
-    public function first()
+    public function first(): ?Resource
     {
         $this->query['$top'] = 1;
         $response = $this->get();
@@ -114,11 +114,17 @@ class ExactOnlineClient
      *
      * @note This will return a maximum of 60 results since this is the default limit of the Exact Online API
      */
-    public function get(): Collection
+    public function get(): ?Collection
     {
         $resource = $this->getResource();
 
-        $response = $this->request('GET')->d;
+        $response = $this->request('GET');
+
+        if (empty($response) || empty($response->d)) {
+            return null;
+        }
+
+        $response = $response->d;
 
         $resources = collect();
         if (isset($response->results)) {
@@ -264,7 +270,6 @@ class ExactOnlineClient
             return json_decode($response->getBody()->getContents());
         } catch (GuzzleException $exception) {
             throw new ExactOnlineApiException('Exact Online API error: ' . $exception->getMessage());
-            dd($exception);
         }
     }
 
