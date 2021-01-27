@@ -106,7 +106,7 @@ class ExactOnlineClient
         $this->query['$top'] = 1;
         $response = $this->get();
 
-        return $response->first();
+        return optional($response)->first();
     }
 
     /**
