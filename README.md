@@ -81,10 +81,10 @@ Exact Online provides the possibility to work with webhooks (https://support.exa
 
 You can verify the request by using the `Yource\ExactOnlineClient\Http\Middlewares\ExactOnlineWebhookAuthentication` middleware provided by this package.
 
-Next you will need to subscribe to a "topic". This can be done like creating any other resource using the `WebhookSubscriptions` resources provide:
+Next you will need to subscribe to a "topic". This can be done like creating any other resource using the `WebhookSubscriptions` resource provide:
 ````
 $webhookSubscription = new \Yource\ExactOnlineClient\Resources\WebhookSubscriptions([
-        'CallbackURL' => 'https://gca.yource.com/webhooks/exactOnline/generalJournalEntries',
+        'CallbackURL' => 'https://your_domain.com/webhooks/exactOnline/generalJournalEntries',
         'Topic'       => 'GeneralJournalEntries',
     ]);
 
