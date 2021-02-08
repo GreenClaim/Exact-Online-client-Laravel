@@ -8,6 +8,8 @@ use Illuminate\Support\Collection;
 use InvalidArgumentException;
 use Yource\ExactOnlineClient\Exceptions\ExactOnlineApiException;
 use Yource\ExactOnlineClient\Resources\Resource;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 class ExactOnlineClient
 {
@@ -267,10 +269,34 @@ class ExactOnlineClient
                 $options
             );
 
-            return json_decode($response->getBody()->getContents());
+            $content = $this->cleanUpBody($response->getBody()->getContents());
+            $json = json_decode($content);
+
+            if (json_last_error() == JSON_ERROR_NONE) {
+                return $json;
+            }
+
+            throw new ExactOnlineApiException('Exact Online API JSON error: ' . $response->getBody()->getContents());
         } catch (GuzzleException $exception) {
             throw new ExactOnlineApiException('Exact Online API error: ' . $exception->getMessage());
         }
+    }
+
+    private function cleanUpBody(string $content): string
+    {
+        return Str::of($content)->replaceMatches('/\s+/', ' ')
+            ->replace('}{ "error": { "code": "", "message": { "lang": "", "value": "A problem has occurred. The cause of this issue will be investigated as soon as possible." } }', '');
+    }
+
+    private function containsError(string $content): bool
+    {
+        $containsError = Str::of($content)->contains('"error": ');
+
+        if ($containsError === true) {
+            Log::warning('Exact Online API request contains an error, see body: ' . $content);
+        }
+
+        return $containsError;
     }
 
     private function reachedRequestLimit(int $i): bool
