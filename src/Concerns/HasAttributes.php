@@ -277,6 +277,22 @@ trait HasAttributes
     public function attributesToArray()
     {
         $attributes = $this->getAttributes();
+        $attributes = $this->formatDates($attributes);
+
+        return $attributes;
+    }
+
+    /**
+     * Convert the resource's dates to formatted strings.
+     *
+     * @return array
+     */
+    private function formatDates($attributes) {
+        foreach ($attributes as $key => $value) {
+            if ($this->isDateAttribute($key) && $value instanceof Carbon) {
+                $attributes[$key] = $value->toDateString();
+            }
+        }
 
         return $attributes;
     }
