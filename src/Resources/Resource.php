@@ -85,7 +85,28 @@ abstract class Resource implements Jsonable
      */
     public function jsonSerialize()
     {
+        $this->jsonSerializeRelationships();
         return $this->toArray();
+    }
+
+    /**
+     * Convert the objects relationships into something JSON serializable.
+     *
+     * @return array
+     */
+    public function jsonSerializeRelationships()
+    {
+        if (!empty($this->relationships)) {
+            foreach ($this->relationships as $attributeName => $resourceClass) {
+                if (!empty($this->$attributeName)) {
+                    $this->$attributeName->transform(function ($resource) {
+                        return $resource->jsonSerialize();
+                    });
+                }
+            }
+
+            return $this;
+        }
     }
 
     /**

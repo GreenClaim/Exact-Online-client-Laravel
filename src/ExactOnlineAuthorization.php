@@ -10,7 +10,9 @@ use InvalidArgumentException;
 
 class ExactOnlineAuthorization
 {
-    private string $credentialFilePath = 'yource/exact-online/credentials.json';
+    private string $credentialFilePath;
+
+    private string $credentialFileDisk = 'local';
 
     private string $baseUri = 'https://start.exactonline.nl';
 
@@ -30,6 +32,10 @@ class ExactOnlineAuthorization
 
     public function __construct()
     {
+        $this->credentialFilePath = config('exact-online-client-laravel.credential_file_path');
+
+        $this->credentialFileDisk = config('exact-online-client-laravel.credential_file_disk');
+
         $this->redirectUrl = route('exact-online.callback');
 
         $this->clientId = config('exact-online-client-laravel.client_id');
@@ -43,8 +49,8 @@ class ExactOnlineAuthorization
 
     public function getCredentials(): ?object
     {
-        if (Storage::disk('s3')->exists($this->credentialFilePath)) {
-            $credentials = Storage::disk('s3')->get(
+        if (Storage::disk($this->credentialFileDisk)->exists($this->credentialFilePath)) {
+            $credentials = Storage::disk($this->credentialFileDisk)->get(
                 $this->credentialFilePath
             );
             return (object) json_decode($credentials, false);
@@ -96,6 +102,11 @@ class ExactOnlineAuthorization
         return $this->credentialFilePath;
     }
 
+    public function getCredentialFileDisk(): string
+    {
+        return $this->credentialFileDisk;
+    }
+
     private function getTokenUrl(): string
     {
         return $this->baseUri . $this->tokenUrlPath;
@@ -134,8 +145,8 @@ class ExactOnlineAuthorization
             $body = json_decode($response->getBody()->getContents(), true);
 
             if (json_last_error() === JSON_ERROR_NONE) {
-                if (Storage::disk('s3')->exists($this->credentialFilePath)) {
-                    $credentials = Storage::disk('s3')->get(
+                if (Storage::disk($this->credentialFileDisk)->exists($this->credentialFilePath)) {
+                    $credentials = Storage::disk($this->credentialFileDisk)->get(
                         $this->credentialFilePath
                     );
 
@@ -144,7 +155,7 @@ class ExactOnlineAuthorization
                     $credentials->refreshToken = $body['refresh_token'];
                     $credentials->tokenExpires = $this->getTimestampFromExpiresIn((int) $body['expires_in']);
 
-                    Storage::disk('s3')->put($this->credentialFilePath, json_encode($credentials));
+                    Storage::disk($this->credentialFileDisk)->put($this->credentialFilePath, json_encode($credentials));
                 }
             } else {
                 throw new Exception('Could not acquire tokens, json decode failed. Got response: ' . $response->getBody()->getContents());

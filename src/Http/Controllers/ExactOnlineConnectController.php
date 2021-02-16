@@ -33,18 +33,20 @@ class ExactOnlineConnectController extends Controller
     public function callback(Request $request)
     {
         $authorization = (new ExactOnlineAuthorization());
+        $credentialFileDisk = $authorization->getCredentialFileDisk();
+        $credentialFilePath = $authorization->getCredentialFilePath();
 
         $credentials = '{}';
-        if (Storage::disk('s3')->exists($authorization->getCredentialFilePath())) {
-            $credentials = Storage::disk('s3')->get(
-                $authorization->getCredentialFilePath()
+        if (Storage::disk($credentialFileDisk)->exists($credentialFilePath)) {
+            $credentials = Storage::disk($credentialFileDisk)->get(
+                $credentialFilePath
             );
         }
 
         $credentials = (object) json_decode($credentials, false);
         $credentials->authorisationCode = $request->get('code');
 
-        Storage::disk('s3')->put($authorization->getCredentialFilePath(), json_encode($credentials));
+        Storage::disk($credentialFileDisk)->put($credentialFilePath, json_encode($credentials));
 
         return view('exact-online-client::connected', ['connection' => $authorization]);
     }
