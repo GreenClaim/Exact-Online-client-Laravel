@@ -75,3 +75,19 @@ GeneralJournalEntry::select([
     }
 });
 ````
+
+### Webhooks
+Exact Online provides the possibility to work with webhooks (https://support.exactonline.com/community/s/knowledge-base#All-All-DNO-Content-webhooksc). You will have to create a POST endpoint where Exact Online can do a POST request to that will handle syncing the data. Exact Online will sent a POST request for both created as updated resources. See the Exact Online documentation for more info on the request that will be sent: https://support.exactonline.com/community/s/knowledge-base#All-All-DNO-Content-webhookstut.
+
+You can verify the request by using the `Yource\ExactOnlineClient\Http\Middlewares\ExactOnlineWebhookAuthentication` middleware provided by this package.
+
+Next you will need to subscribe to a "topic". This can be done like creating any other resource using the `WebhookSubscriptions` resource provide:
+````
+$webhookSubscription = new \Yource\ExactOnlineClient\Resources\WebhookSubscriptions([
+        'CallbackURL' => 'https://your_domain.com/webhooks/exactOnline/generalJournalEntries',
+        'Topic'       => 'GeneralJournalEntries',
+    ]);
+
+$webhookSubscription->create();
+````
+Note: Exact online will do a verification request without any body to the callback URL defined. So make sure the endpoint exists. The `ExactOnlineWebhookAuthentication` middleware will provide Exact Online with the required 200 respons for the verification request.
