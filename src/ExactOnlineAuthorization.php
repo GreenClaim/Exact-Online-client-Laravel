@@ -10,9 +10,9 @@ use InvalidArgumentException;
 
 class ExactOnlineAuthorization
 {
-    private string $credentialFilePath;
+    private string $credentialFilePath = 'yource/exact-online/credentials.json';
 
-    private string $credentialFileDisk = 'local';
+    private string $credentialFileDisk = 's3';
 
     private string $baseUri = 'https://start.exactonline.nl';
 
@@ -36,7 +36,7 @@ class ExactOnlineAuthorization
 
         $this->credentialFileDisk = config('exact-online-client-laravel.credential_file_disk');
 
-        $this->redirectUrl = route('exact-online.callback');
+        $this->redirectUrl = "https://gca.yource.com/exact-online/oauth";
 
         $this->clientId = config('exact-online-client-laravel.client_id');
 
@@ -53,6 +53,7 @@ class ExactOnlineAuthorization
             $credentials = Storage::disk($this->credentialFileDisk)->get(
                 $this->credentialFilePath
             );
+
             return (object) json_decode($credentials, false);
         }
 

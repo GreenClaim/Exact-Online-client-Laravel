@@ -4,6 +4,7 @@ namespace Yource\ExactOnlineClient\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Storage;
 use Yource\ExactOnlineClient\ExactOnlineAuthorization;
@@ -48,6 +49,10 @@ class ExactOnlineConnectController extends Controller
 
         Storage::disk($credentialFileDisk)->put($credentialFilePath, json_encode($credentials));
 
-        return view('exact-online-client::connected', ['connection' => $authorization]);
+        if (empty($credentials)) {
+            Log::alert("{$credentials} . {$credentialFileDisk} - {$credentialFilePath}");
+        } else {
+            return view('exact-online-client::connected', ['connection' => $authorization]);
+        }
     }
 }

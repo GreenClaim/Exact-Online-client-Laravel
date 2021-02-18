@@ -9,7 +9,7 @@ return [
     |
     */
 
-    'credential_file_path' => env('EXACT_CREDENTIAL_FILE_PATH', 'yource/exact-online/credentials.json'),
+    'credential_file_path' => env('EXACT_ONLINE_CREDENTIAL_FILE_PATH', 'yource/exact-online/credentials.json'),
 
     /*
     |--------------------------------------------------------------------------
@@ -19,7 +19,7 @@ return [
     |
     */
 
-    'credential_file_disk' => env('EXACT_CREDENTIAL_FILE_DISK', 'local'),
+    'credential_file_disk' => env('EXACT_ONLINE_CREDENTIAL_FILE_DISK', 'local'),
 
     /*
     |--------------------------------------------------------------------------
