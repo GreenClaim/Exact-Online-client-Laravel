@@ -48,7 +48,7 @@ $generalJournalEntry->create();
 ````
 
 ### Each page
-Exact Online returns a maximum of 60 results. With `eachaPage()` you can iterate over all the pages and execute a
+Exact Online returns a maximum of 60 results. With `eachPage()` you can iterate over all the pages and execute a
 callback to deal with the results per page. Similarly to `chunk()` for Laravel queries except that there is no count
 parameter you always get a maximum of 60 results.
 
