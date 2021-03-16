@@ -14,6 +14,16 @@ composer require greenclaim/exact-online-client-laravel "dev-master"
 php artisan vendor:publish --provider="Yource\ExactOnlineClient\ExactOnlineClientServiceProvider"
 ````
 
+### Credentials
+````
+Exact Online uses OAuth 2.
+To authorize you requests you will need a token. To request that token you will first have to register your app and create an API key. You can do so on https://apps.exactonline.com. There click on register APP and fill in a name and as a callback `http://yourdomain.com/exact-online/oauth`.
+
+Put the generated key in the exact-online-client-laravel config or your env file.
+
+With the credentials you set in the exact-online-client-laravel the package need to request a token from Exact Online. You can do this by going to http://yourdomain.com/exact-online/connect.
+````
+
 ### Finding a single resource by its GUID
 ````
 use Yource\ExactOnlineClient\Resources\BankEntry;
