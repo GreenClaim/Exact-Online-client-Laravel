@@ -16,6 +16,8 @@ class SalesEntry extends Resource implements ResourceInterface
     protected array $dates = [
         'Created',
         'Modified',
+        'EntryDate',
+        'DueDate',
     ];
 
     protected array $relationships = [

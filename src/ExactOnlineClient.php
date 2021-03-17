@@ -5,11 +5,11 @@ namespace Yource\ExactOnlineClient;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 use Yource\ExactOnlineClient\Exceptions\ExactOnlineApiException;
 use Yource\ExactOnlineClient\Resources\Resource;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Log;
 
 class ExactOnlineClient
 {
@@ -23,7 +23,7 @@ class ExactOnlineClient
 
     private string $division;
 
-    private Resource $resource;
+    private ?Resource $resource = null;
 
     private string $endpoint;
 
@@ -40,17 +40,19 @@ class ExactOnlineClient
 
     private int $limitRequests;
 
-    public function __construct(Resource $resource)
+    public function __construct(?Resource $resource = null)
     {
-        $this->authorization = (new ExactOnlineAuthorization());
+        $this->authorization = new ExactOnlineAuthorization();
 
         $this->division = config('exact-online-client-laravel.division');
-
-        $this->setResource($resource);
 
         $this->client = new Client([
             'base_uri' => $this->baseUri,
         ]);
+
+        if ($resource) {
+            $this->setResource($resource);
+        }
     }
 
     public function select($fields = ['*']): self
@@ -210,16 +212,16 @@ class ExactOnlineClient
         return $resources;
     }
 
-    public function create()
+    public function create(): Resource
     {
         $resource = $this->getResource();
 
-        if (!$this->resource->hasAttributes()) {
+        if (!$resource->hasAttributes()) {
             throw new InvalidArgumentException('Attributes can\'t be empty');
         }
 
         // Convert the resource's attributes and set it in the body to be sent
-        $this->body = $this->resource->toJson();
+        $this->body = $resource->toJson();
         $response = $this->request('POST');
 
         if (!empty($response->d)) {
@@ -278,7 +280,9 @@ class ExactOnlineClient
 
             throw new ExactOnlineApiException('Exact Online API JSON error: ' . $response->getBody()->getContents());
         } catch (GuzzleException $exception) {
-            throw new ExactOnlineApiException('Exact Online API error: ' . $exception->getMessage());
+            throw new ExactOnlineApiException(
+                'Exact Online API error: ' . $exception->getResponse()->getBody()->getContents()
+            );
         }
     }
 
@@ -339,7 +343,7 @@ class ExactOnlineClient
         return $this;
     }
 
-    public function getResource(): Resource
+    public function getResource(): ?Resource
     {
         return $this->resource;
     }
