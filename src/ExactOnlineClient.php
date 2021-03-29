@@ -21,7 +21,7 @@ class ExactOnlineClient
 
     private string $apiUrlPath = '/api/v1';
 
-    private string $division;
+    private ?string $division;
 
     private ?Resource $resource = null;
 
