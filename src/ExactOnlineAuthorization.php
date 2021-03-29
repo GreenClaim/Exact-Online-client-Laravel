@@ -36,7 +36,7 @@ class ExactOnlineAuthorization
 
         $this->credentialFileDisk = config('exact-online-client-laravel.credential_file_disk');
 
-        $this->redirectUrl = "https://gca.yource.com/exact-online/oauth";
+        $this->redirectUrl = config('exact-online-client-laravel.redirect_url');
 
         $this->clientId = config('exact-online-client-laravel.client_id');
 

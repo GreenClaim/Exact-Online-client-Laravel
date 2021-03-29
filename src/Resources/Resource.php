@@ -9,6 +9,11 @@ use Yource\ExactOnlineClient\Concerns\HasAttributes;
 use Yource\ExactOnlineClient\ExactOnlineClient;
 use Yource\ExactOnlineClient\Interfaces\Jsonable;
 
+/**
+ * @method \Yource\ExactOnlineClient\Resources\Resource create()
+ *
+ * @see \Yource\ExactOnlineClient\ExactOnlineClient
+ */
 abstract class Resource implements Jsonable
 {
     use HasAttributes;
@@ -130,7 +135,7 @@ abstract class Resource implements Jsonable
 
     public function newClient(): ExactOnlineClient
     {
-        return new ExactOnlineClient($this);
+        return app(ExactOnlineClient::class)->setResource($this);
     }
 
     /**

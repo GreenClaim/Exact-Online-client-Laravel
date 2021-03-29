@@ -21,7 +21,7 @@ class ExactOnlineClientServiceProvider extends ServiceProvider
     public function register()
     {
         $this->app->singleton(ExactOnlineClient::class, function () {
-            return new ExactOnlineClient('');
+            return new ExactOnlineClient;
         });
     }
 }
