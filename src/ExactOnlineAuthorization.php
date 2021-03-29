@@ -10,41 +10,30 @@ use InvalidArgumentException;
 
 class ExactOnlineAuthorization
 {
-    private string $credentialFilePath = 'yource/exact-online/credentials.json';
-
-    private string $credentialFileDisk = 's3';
-
     private string $baseUri = 'https://start.exactonline.nl';
 
     private string $authUrlPath = '/api/oauth2/auth';
 
     private string $tokenUrlPath = '/api/oauth2/token';
 
-    private string $redirectUrl;
+    private ?string $credentialFilePath;
 
-    private string $clientId;
+    private ?string $credentialFileDisk;
 
-    private string $clientSecret;
+    private ?string $redirectUrl;
 
-    private string $authorisationCode;
+    private ?string $clientId;
 
-    private string $accessToken;
+    private ?string $clientSecret;
 
     public function __construct()
     {
         $this->credentialFilePath = config('exact-online-client-laravel.credential_file_path');
-
         $this->credentialFileDisk = config('exact-online-client-laravel.credential_file_disk');
-
         $this->redirectUrl = config('exact-online-client-laravel.redirect_url');
-
         $this->clientId = config('exact-online-client-laravel.client_id');
-
         $this->clientSecret = config('exact-online-client-laravel.client_secret');
-
-        $this->client = new Client([
-            'base_uri' => $this->baseUri,
-        ]);
+        $this->client = new Client(['base_uri' => $this->baseUri]);
     }
 
     public function getCredentials(): ?object
