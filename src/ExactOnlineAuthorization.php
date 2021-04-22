@@ -4,7 +4,10 @@ namespace Yource\ExactOnlineClient;
 
 use Exception;
 use GuzzleHttp\Client;
-use GuzzleHttp\Psr7;
+use GuzzleHttp\Exception\ClientException;
+use GuzzleHttp\Psr7\Message;
+use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
 
@@ -56,7 +59,9 @@ class ExactOnlineAuthorization
             return $credentials->authorisationCode;
         }
 
-        throw new Exception('Authorization code does not exist. Go to: ' . route('exact-online.connect') . ' to request one.');
+        throw new Exception(
+            'Authorization code does not exist. Go to: ' . route('exact-online.connect') . ' to request one.'
+        );
     }
 
     public function getRefreshToken(): ?string
@@ -131,27 +136,56 @@ class ExactOnlineAuthorization
 
             $response = $this->client->post($this->getTokenUrl(), $body);
 
-            Psr7\rewind_body($response);
+            Message::rewindBody($response);
             $body = json_decode($response->getBody()->getContents(), true);
 
             if (json_last_error() === JSON_ERROR_NONE) {
-                if (Storage::disk($this->credentialFileDisk)->exists($this->credentialFilePath)) {
-                    $credentials = Storage::disk($this->credentialFileDisk)->get(
-                        $this->credentialFilePath
+                $lock = Cache::lock('exact_online_authorization', 10);
+
+                try {
+                    // Waiting a maximum of 5 seconds
+                    $lock->block(5);
+
+                    // Lock acquired after waiting a maximum of 5 seconds...
+                    if (Storage::disk($this->credentialFileDisk)->exists($this->credentialFilePath)) {
+                        $credentials = Storage::disk($this->credentialFileDisk)->get(
+                            $this->credentialFilePath
+                        );
+
+                        $credentials = (object) json_decode($credentials, false);
+                        $credentials->accessToken = serialize($body['access_token']);
+                        $credentials->refreshToken = $body['refresh_token'];
+                        $credentials->tokenExpires = $this->getTimestampFromExpiresIn((int) $body['expires_in']);
+
+                        Storage::disk($this->credentialFileDisk)->put(
+                            $this->credentialFilePath,
+                            json_encode($credentials)
+                        );
+                    }
+                } catch (LockTimeoutException $e) {
+                    throw new Exception(
+                        'Could not acquire or refresh tokens: Cache locked for longer than 10 seconds'
                     );
-
-                    $credentials = (object) json_decode($credentials, false);
-                    $credentials->accessToken = serialize($body['access_token']);
-                    $credentials->refreshToken = $body['refresh_token'];
-                    $credentials->tokenExpires = $this->getTimestampFromExpiresIn((int) $body['expires_in']);
-
-                    Storage::disk($this->credentialFileDisk)->put($this->credentialFilePath, json_encode($credentials));
+                } finally {
+                    optional($lock)->release();
                 }
             } else {
-                throw new Exception('Could not acquire tokens, json decode failed. Got response: ' . $response->getBody()->getContents());
+                throw new Exception(
+                    'Could not acquire tokens, json decode failed. Got response: ' .
+                    $response->getBody()->getContents()
+                );
             }
+        } catch (ClientException $exception) {
+            throw new Exception(
+                'Could not acquire or refresh tokens [http ' . $exception . ']: ' .
+                $exception->getResponse()->getBody()->getContents()
+            );
         } catch (Exception $exception) {
-            throw new Exception('Could not acquire or refresh tokens [http ' . $exception . ']', 0, $exception);
+            throw new Exception(
+                'Could not acquire or refresh tokens [http ' . $exception . ']',
+                0,
+                $exception
+            );
         }
     }
 
