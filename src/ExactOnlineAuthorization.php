@@ -6,8 +6,6 @@ use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Psr7\Message;
-use Illuminate\Contracts\Cache\LockTimeoutException;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
 
@@ -39,7 +37,7 @@ class ExactOnlineAuthorization
         $this->client = new Client(['base_uri' => $this->baseUri]);
     }
 
-    public function getCredentials(): ?object
+    private function getCredentials(): ?object
     {
         if (Storage::disk($this->credentialFileDisk)->exists($this->credentialFilePath)) {
             $credentials = Storage::disk($this->credentialFileDisk)->get(
@@ -52,7 +50,7 @@ class ExactOnlineAuthorization
         return null;
     }
 
-    public function getAuthorizationCode(): string
+    private function getAuthorizationCode(): string
     {
         $credentials = $this->getCredentials();
         if (!empty($credentials) && !empty($credentials->authorisationCode)) {
@@ -64,7 +62,7 @@ class ExactOnlineAuthorization
         );
     }
 
-    public function getRefreshToken(): ?string
+    private function getRefreshToken(): ?string
     {
         $credentials = $this->getCredentials();
         return optional($credentials)->refreshToken;
@@ -76,7 +74,7 @@ class ExactOnlineAuthorization
         return optional($credentials)->accessToken;
     }
 
-    public function getTokenExpires(): ?string
+    private function getTokenExpires(): ?string
     {
         $credentials = $this->getCredentials();
         return optional($credentials)->tokenExpires;
@@ -140,34 +138,20 @@ class ExactOnlineAuthorization
             $body = json_decode($response->getBody()->getContents(), true);
 
             if (json_last_error() === JSON_ERROR_NONE) {
-                $lock = Cache::lock('exact_online_authorization', 10);
-
-                try {
-                    // Waiting a maximum of 5 seconds
-                    $lock->block(5);
-
-                    // Lock acquired after waiting a maximum of 5 seconds...
-                    if (Storage::disk($this->credentialFileDisk)->exists($this->credentialFilePath)) {
-                        $credentials = Storage::disk($this->credentialFileDisk)->get(
-                            $this->credentialFilePath
-                        );
-
-                        $credentials = (object) json_decode($credentials, false);
-                        $credentials->accessToken = serialize($body['access_token']);
-                        $credentials->refreshToken = $body['refresh_token'];
-                        $credentials->tokenExpires = $this->getTimestampFromExpiresIn((int) $body['expires_in']);
-
-                        Storage::disk($this->credentialFileDisk)->put(
-                            $this->credentialFilePath,
-                            json_encode($credentials)
-                        );
-                    }
-                } catch (LockTimeoutException $e) {
-                    throw new Exception(
-                        'Could not acquire or refresh tokens: Cache locked for longer than 10 seconds'
+                if (Storage::disk($this->credentialFileDisk)->exists($this->credentialFilePath)) {
+                    $credentials = Storage::disk($this->credentialFileDisk)->get(
+                        $this->credentialFilePath
                     );
-                } finally {
-                    optional($lock)->release();
+
+                    $credentials = (object) json_decode($credentials, false);
+                    $credentials->accessToken = serialize($body['access_token']);
+                    $credentials->refreshToken = $body['refresh_token'];
+                    $credentials->tokenExpires = $this->getTimestampFromExpiresIn((int) $body['expires_in']);
+
+                    Storage::disk($this->credentialFileDisk)->put(
+                        $this->credentialFilePath,
+                        json_encode($credentials)
+                    );
                 }
             } else {
                 throw new Exception(

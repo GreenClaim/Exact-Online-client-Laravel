@@ -2,9 +2,12 @@
 
 namespace Yource\ExactOnlineClient;
 
+use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -232,6 +235,25 @@ class ExactOnlineClient
     }
 
     public function request(string $method)
+    {
+        $lock = Cache::lock('exact_online_authorization', 20);
+
+        try {
+            // Waiting a maximum of 5 seconds
+            $lock->block(10);
+
+            // Lock acquired after waiting a maximum of 5 seconds...
+            return $this->apiRequest($method);
+        } catch (LockTimeoutException $e) {
+            throw new Exception(
+                'Could not acquire or refresh tokens: Cache locked for longer than 10 seconds'
+            );
+        } finally {
+            $lock?->release();
+        }
+    }
+
+    private function apiRequest(string $method)
     {
         $options = [];
 
