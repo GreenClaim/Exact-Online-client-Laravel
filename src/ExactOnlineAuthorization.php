@@ -6,20 +6,18 @@ use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Psr7\Message;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Cache;
 use InvalidArgumentException;
 
 class ExactOnlineAuthorization
 {
-    private string $baseUri = 'https://start.exactonline.nl';
+    private const BASE_URI = 'https://start.exactonline.nl';
 
-    private string $authUrlPath = '/api/oauth2/auth';
+    private const AUTH_URL_PATH = '/api/oauth2/auth';
 
-    private string $tokenUrlPath = '/api/oauth2/token';
+    private const TOKEN_URL_PATH = '/api/oauth2/token';
 
-    private ?string $credentialFilePath;
-
-    private ?string $credentialFileDisk;
+    private const CREDENTIALS_KEY = 'exact_online.credentials';
 
     private ?string $redirectUrl;
 
@@ -27,57 +25,59 @@ class ExactOnlineAuthorization
 
     private ?string $clientSecret;
 
+    private Client $client;
+
     public function __construct()
     {
-        $this->credentialFilePath = config('exact-online-client-laravel.credential_file_path');
-        $this->credentialFileDisk = config('exact-online-client-laravel.credential_file_disk');
         $this->redirectUrl = config('exact-online-client-laravel.redirect_url');
         $this->clientId = config('exact-online-client-laravel.client_id');
         $this->clientSecret = config('exact-online-client-laravel.client_secret');
-        $this->client = new Client(['base_uri' => $this->baseUri]);
+        $this->client = new Client(['base_uri' => self::BASE_URI]);
     }
 
-    private function getCredentials(): ?object
+    public function getCredentials(): ?object
     {
-        if (Storage::disk($this->credentialFileDisk)->exists($this->credentialFilePath)) {
-            $credentials = Storage::disk($this->credentialFileDisk)->get(
-                $this->credentialFilePath
-            );
+        $credentials = Cache::get(self::CREDENTIALS_KEY);
 
+        if (!empty($credentials)) {
             return (object) json_decode($credentials, false);
         }
 
         return null;
     }
 
+    public function setCredentials($credentials)
+    {
+        return Cache::put(self::CREDENTIALS_KEY, json_encode($credentials));
+    }
+
     private function getAuthorizationCode(): string
     {
-        $credentials = $this->getCredentials();
-        if (!empty($credentials) && !empty($credentials->authorisationCode)) {
-            return $credentials->authorisationCode;
+        $authorisationCode = optional($this->getCredentials())->authorisationCode;
+
+        if (empty($authorisationCode)) {
+            throw new Exception(sprintf(
+                'Authorisation code does not exist. Go to: %s to request one.',
+                route('exact-online.connect')
+            ));
         }
 
-        throw new Exception(
-            'Authorization code does not exist. Go to: ' . route('exact-online.connect') . ' to request one.'
-        );
+        return $authorisationCode;
     }
 
     private function getRefreshToken(): ?string
     {
-        $credentials = $this->getCredentials();
-        return optional($credentials)->refreshToken;
+        return optional($this->getCredentials())->refreshToken;
     }
 
     public function getAccessToken(): ?string
     {
-        $credentials = $this->getCredentials();
-        return optional($credentials)->accessToken;
+        return optional($this->getCredentials())->accessToken;
     }
 
     private function getTokenExpires(): ?string
     {
-        $credentials = $this->getCredentials();
-        return optional($credentials)->tokenExpires;
+        return optional($this->getCredentials())->tokenExpires;
     }
 
     public function setRedirectUrl($redirectUrl)
@@ -88,21 +88,6 @@ class ExactOnlineAuthorization
     public function setAccessToken($accessToken): void
     {
         $this->accessToken = $accessToken;
-    }
-
-    public function getCredentialFilePath(): string
-    {
-        return $this->credentialFilePath;
-    }
-
-    public function getCredentialFileDisk(): string
-    {
-        return $this->credentialFileDisk;
-    }
-
-    private function getTokenUrl(): string
-    {
-        return $this->baseUri . $this->tokenUrlPath;
     }
 
     public function acquireAccessToken(): void
@@ -138,20 +123,14 @@ class ExactOnlineAuthorization
             $body = json_decode($response->getBody()->getContents(), true);
 
             if (json_last_error() === JSON_ERROR_NONE) {
-                if (Storage::disk($this->credentialFileDisk)->exists($this->credentialFilePath)) {
-                    $credentials = Storage::disk($this->credentialFileDisk)->get(
-                        $this->credentialFilePath
-                    );
+                $credentials = $this->getCredentials();
 
-                    $credentials = (object) json_decode($credentials, false);
+                if (!empty($credentials)) {
                     $credentials->accessToken = serialize($body['access_token']);
                     $credentials->refreshToken = $body['refresh_token'];
                     $credentials->tokenExpires = $this->getTimestampFromExpiresIn((int) $body['expires_in']);
 
-                    Storage::disk($this->credentialFileDisk)->put(
-                        $this->credentialFilePath,
-                        json_encode($credentials)
-                    );
+                    $this->setCredentials($credentials);
                 }
             } else {
                 throw new Exception(
@@ -191,11 +170,9 @@ class ExactOnlineAuthorization
     /**
      * Translates expires_in to a Unix timestamp.
      *
-     * @param string $expiresIn number of seconds until the token expires
-     *
-     * @return int
+     * @param int $expiresIn number of seconds until the token expires
      */
-    private function getTimestampFromExpiresIn(int $expiresIn)
+    private function getTimestampFromExpiresIn(int $expiresIn): int
     {
         if (! ctype_digit($expiresIn)) {
             throw new InvalidArgumentException('Function requires a numeric expires value');
@@ -204,15 +181,19 @@ class ExactOnlineAuthorization
         return time() + $expiresIn;
     }
 
-    /**
-     * @return string
-     */
-    public function getAuthUrl()
+    public function getAuthUrl(): string
     {
-        return $this->baseUri . $this->authUrlPath . '?' . http_build_query([
-                'client_id'     => $this->clientId,
-                'redirect_uri'  => $this->redirectUrl,
-                'response_type' => 'code',
-            ]);
+        $query = http_build_query([
+            'client_id'     => $this->clientId,
+            'redirect_uri'  => $this->redirectUrl,
+            'response_type' => 'code',
+        ]);
+
+        return self::BASE_URI . self::AUTH_URL_PATH . '?' . $query;
+    }
+
+    private function getTokenUrl(): string
+    {
+        return self::BASE_URI . self::TOKEN_URL_PATH;
     }
 }

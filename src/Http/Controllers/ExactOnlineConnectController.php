@@ -4,13 +4,18 @@ namespace Yource\ExactOnlineClient\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Redirect;
-use Illuminate\Support\Facades\Storage;
+use stdClass;
 use Yource\ExactOnlineClient\ExactOnlineAuthorization;
 
 class ExactOnlineConnectController extends Controller
 {
+    private $exactOnlineAuthorization;
+
+    public function __construct(ExactOnlineAuthorization $exactOnlineAuthorization)
+    {
+        $this->exactOnlineAuthorization = $exactOnlineAuthorization;
+    }
+
     /**
      * Connect Exact Online app
      */
@@ -24,8 +29,7 @@ class ExactOnlineConnectController extends Controller
      */
     public function authorize()
     {
-        $authUrl = (new ExactOnlineAuthorization())->getAuthUrl();
-        return Redirect::to($authUrl);
+        return redirect()->to($this->exactOnlineAuthorization->getAuthUrl());
     }
 
     /**
@@ -33,26 +37,20 @@ class ExactOnlineConnectController extends Controller
      */
     public function callback(Request $request)
     {
-        $authorization = (new ExactOnlineAuthorization());
-        $credentialFileDisk = $authorization->getCredentialFileDisk();
-        $credentialFilePath = $authorization->getCredentialFilePath();
-
-        $credentials = '{}';
-        if (Storage::disk($credentialFileDisk)->exists($credentialFilePath)) {
-            $credentials = Storage::disk($credentialFileDisk)->get(
-                $credentialFilePath
-            );
-        }
-
-        $credentials = (object) json_decode($credentials, false);
-        $credentials->authorisationCode = $request->get('code');
-
-        Storage::disk($credentialFileDisk)->put($credentialFilePath, json_encode($credentials));
+        $credentials = $this->exactOnlineAuthorization->getCredentials();
 
         if (empty($credentials)) {
-            Log::alert("{$credentials} . {$credentialFileDisk} - {$credentialFilePath}");
-        } else {
-            return view('exact-online-client::connected', ['connection' => $authorization]);
+            $credentials = new stdClass;
         }
+
+        $credentials->authorisationCode = $request->get('code');
+
+        $this->exactOnlineAuthorization->setCredentials($credentials);
+
+        abort_if(empty($credentials), 500, 'Credentials are empty');
+
+        return view('exact-online-client::connected', [
+            'connection' => $this->exactOnlineAuthorization,
+        ]);
     }
 }

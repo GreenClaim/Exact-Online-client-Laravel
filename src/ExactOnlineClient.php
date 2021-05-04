@@ -236,20 +236,21 @@ class ExactOnlineClient
 
     public function request(string $method)
     {
-        $lock = Cache::lock('exact_online_authorization', 20);
+        // Locking for 10 seconds
+        $lock = Cache::lock('exact_online_authorization', 10);
 
         try {
-            // Waiting a maximum of 5 seconds
-            $lock->block(10);
+            // Waiting for the lock to be released..
+            $lock->block(30);
 
-            // Lock acquired after waiting a maximum of 5 seconds...
+            // ..lock acquired after waiting a maximum number of seconds
             return $this->apiRequest($method);
-        } catch (LockTimeoutException $e) {
+        } catch (LockTimeoutException) {
             throw new Exception(
                 'Could not acquire or refresh tokens: Cache locked for longer than 10 seconds'
             );
         } finally {
-            $lock?->release();
+            optional($lock)->release();
         }
     }
 
