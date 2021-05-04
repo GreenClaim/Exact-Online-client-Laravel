@@ -49,8 +49,6 @@ class ExactOnlineConnectController extends Controller
 
         abort_if(empty($credentials), 500, 'Credentials are empty');
 
-        return view('exact-online-client::connected', [
-            'connection' => $this->exactOnlineAuthorization,
-        ]);
+        return view('exact-online-client::connected');
     }
 }

@@ -174,7 +174,7 @@ class ExactOnlineAuthorization
      */
     private function getTimestampFromExpiresIn(int $expiresIn): int
     {
-        if (! ctype_digit($expiresIn)) {
+        if (!ctype_digit($expiresIn)) {
             throw new InvalidArgumentException('Function requires a numeric expires value');
         }
 

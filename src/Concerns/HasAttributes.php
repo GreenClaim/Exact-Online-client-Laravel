@@ -62,13 +62,6 @@ trait HasAttributes
             return $this->setMutatedAttributeValue($key, $value);
         }
 
-//        // If an attribute is listed as a "relationship", we'll do another request to grab it
-//        elseif ($value && $this->isRelationshipAttribute($key)) {
-//            $this->$key = $this->requestRelationship($key);
-//
-//            return $this;
-//        }
-
         // If an attribute is listed as a "date", we'll convert it from a DateTime
         // instance into a form proper for storage on the database tables using
         // the connection grammar's date format. We will auto set the values.
@@ -190,7 +183,6 @@ trait HasAttributes
     /**
      * Return a timestamp as DateTime object.
      * @param $value
-     * @return Carbon
      */
     protected function asDateTime($value): Carbon
     {
@@ -287,7 +279,8 @@ trait HasAttributes
      *
      * @return array
      */
-    private function formatDates($attributes) {
+    private function formatDates($attributes)
+    {
         foreach ($attributes as $key => $value) {
             if ($this->isDateAttribute($key) && $value instanceof Carbon) {
                 $attributes[$key] = $value->toDateString();

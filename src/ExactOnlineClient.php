@@ -34,7 +34,7 @@ class ExactOnlineClient
 
     private array $wheres = [];
 
-    private array $query;
+    private array $query = [];
 
     /**
      * The body of the request in JSON
@@ -211,6 +211,9 @@ class ExactOnlineClient
             $this->query['$skiptoken'] = "guid'{$lastResource->getPrimaryKey()}'";
             $page++;
         } while ($this->reachedRequestLimit($page) && !empty($response->d->__next));
+
+        // Clean query for the next request
+        $this->query = [];
 
         return $resources;
     }
